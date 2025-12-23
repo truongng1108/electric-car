@@ -9,3 +9,7 @@ export function handleApiError(error: unknown, defaultMessage: string): Error {
   const message = getErrorMessage(error)
   return new Error(message || defaultMessage)
 }
+
+
+
+

@@ -8,11 +8,11 @@ import {
   ShoppingCart,
   Users,
   Tag,
-  Settings,
-  LogOut,
+  MessageSquare,
   Zap,
   ChevronLeft,
   Menu,
+  LogOut,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
@@ -21,10 +21,11 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
   { name: "Sản phẩm", href: "/admin/products", icon: Package },
+  { name: "Danh mục", href: "/admin/categories", icon: Package },
   { name: "Đơn hàng", href: "/admin/orders", icon: ShoppingCart },
   { name: "Người dùng", href: "/admin/users", icon: Users },
+  { name: "Đánh giá", href: "/admin/reviews", icon: MessageSquare },
   { name: "Mã giảm giá", href: "/admin/discounts", icon: Tag },
-  { name: "Cài đặt", href: "/admin/settings", icon: Settings },
 ]
 
 function SidebarContent() {

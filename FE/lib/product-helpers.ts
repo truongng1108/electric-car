@@ -30,3 +30,7 @@ export function calculateDiscountPercent(originalPrice: number, currentPrice: nu
 export function hasDiscount(product: Product): boolean {
   return Boolean(product.originalPrice && product.originalPrice > product.price)
 }
+
+
+
+

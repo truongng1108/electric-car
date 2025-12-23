@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, useCallback } from "react"
 import Image from "next/image"
-import { Plus, Search, MoreHorizontal, Pencil, Trash2, Eye } from "lucide-react"
+import { Plus, Search, MoreHorizontal, Pencil, Trash2, Eye, Loader2 } from "lucide-react"
 import { AdminHeader } from "@/components/admin/admin-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -21,13 +21,18 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { products as initialProducts, categories, formatCurrency, type Product } from "@/lib/mock-data"
+import { productsApi, categoriesApi } from "@/lib/api"
+import { formatCurrency, getProductImageUrl } from "@/lib/utils"
 import { useToast } from "@/hooks/use-toast"
 import { Toaster } from "@/components/ui/toaster"
+import type { Product, Category } from "@/lib/types"
+import { getErrorMessage } from "@/lib/error-handler"
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<Product[]>(initialProducts)
+  const [products, setProducts] = useState<Product[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [searchQuery, setSearchQuery] = useState("")
+  const [isLoading, setIsLoading] = useState(true)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
@@ -42,10 +47,62 @@ export default function AdminProductsPage() {
   })
   const { toast } = useToast()
 
+  const fetchProducts = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const response = await productsApi.getAllAdmin()
+      setProducts(response.products)
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }, [toast])
+
+  const fetchCategories = useCallback(async () => {
+    try {
+      const response = await categoriesApi.getAllAdmin()
+      setCategories(response.categories)
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      })
+    }
+  }, [toast])
+
+  useEffect(() => {
+    void fetchProducts()
+    void fetchCategories()
+  }, [fetchProducts, fetchCategories])
+
+  const handleSearch = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      const response = await productsApi.searchAdmin({
+        q: searchQuery || undefined,
+      })
+      setProducts(response.products)
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      })
+    } finally {
+      setIsLoading(false)
+    }
+  }, [searchQuery, toast])
+
   const filteredProducts = products.filter(
     (product) =>
       product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.shortDescription.toLowerCase().includes(searchQuery.toLowerCase()),
+      product.shortDescription?.toLowerCase().includes(searchQuery.toLowerCase()),
   )
 
   const openAddDialog = () => {
@@ -64,13 +121,14 @@ export default function AdminProductsPage() {
 
   const openEditDialog = (product: Product) => {
     setSelectedProduct(product)
+    const categoryId = typeof product.category === "string" ? product.category : product.category._id
     setFormData({
       name: product.name,
       price: product.price.toString(),
       originalPrice: product.originalPrice?.toString() || "",
       shortDescription: product.shortDescription,
       description: product.description,
-      category: product.category,
+      category: categoryId,
       stock: product.stock.toString(),
     })
     setIsDialogOpen(true)
@@ -81,7 +139,7 @@ export default function AdminProductsPage() {
     setIsDeleteDialogOpen(true)
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!formData.name || !formData.price || !formData.category) {
       toast({
         title: "Vui lòng điền đầy đủ thông tin",
@@ -90,55 +148,64 @@ export default function AdminProductsPage() {
       return
     }
 
-    if (selectedProduct) {
-      // Update existing product
-      setProducts((prev) =>
-        prev.map((p) =>
-          p.id === selectedProduct.id
-            ? {
-                ...p,
-                name: formData.name,
-                price: Number(formData.price),
-                originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
-                shortDescription: formData.shortDescription,
-                description: formData.description,
-                category: formData.category,
-                stock: Number(formData.stock),
-              }
-            : p,
-        ),
-      )
-      toast({ title: "Cập nhật sản phẩm thành công" })
-    } else {
-      // Add new product
-      const newProduct: Product = {
-        id: (products.length + 1).toString(),
-        name: formData.name,
-        price: Number(formData.price),
-        originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
-        shortDescription: formData.shortDescription,
-        description: formData.description,
-        images: ["/placeholder.svg"],
-        colors: [{ name: "Trắng", hex: "#FFFFFF" }],
-        category: formData.category,
-        specs: [],
-        stock: Number(formData.stock),
-        rating: 0,
-        reviews: 0,
-      }
-      setProducts((prev) => [...prev, newProduct])
-      toast({ title: "Thêm sản phẩm thành công" })
-    }
+    try {
+      if (selectedProduct) {
+        await productsApi.update(selectedProduct._id, {
+          name: formData.name,
+          price: Number(formData.price),
+          originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
+          shortDescription: formData.shortDescription,
+          description: formData.description,
+          category: formData.category,
+          stock: Number(formData.stock),
+        })
+        toast({ title: "Cập nhật sản phẩm thành công" })
+      } else {
+        const formDataToSend = new FormData()
+        formDataToSend.append("name", formData.name)
+        formDataToSend.append("price", formData.price)
+        if (formData.originalPrice) formDataToSend.append("originalPrice", formData.originalPrice)
+        formDataToSend.append("shortDescription", formData.shortDescription)
+        formDataToSend.append("description", formData.description)
+        formDataToSend.append("category", formData.category)
+        formDataToSend.append("stock", formData.stock)
 
-    setIsDialogOpen(false)
+        await productsApi.create(formDataToSend)
+        toast({ title: "Thêm sản phẩm thành công" })
+      }
+      setIsDialogOpen(false)
+      void fetchProducts()
+    } catch (error) {
+      toast({
+        title: "Lỗi",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      })
+    }
   }
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (selectedProduct) {
-      setProducts((prev) => prev.filter((p) => p.id !== selectedProduct.id))
-      toast({ title: "Xóa sản phẩm thành công" })
+      try {
+        await productsApi.delete(selectedProduct._id)
+        toast({ title: "Xóa sản phẩm thành công" })
+        setIsDeleteDialogOpen(false)
+        void fetchProducts()
+      } catch (error) {
+        toast({
+          title: "Lỗi",
+          description: getErrorMessage(error),
+          variant: "destructive",
+        })
+      }
     }
-    setIsDeleteDialogOpen(false)
+  }
+
+  const getCategoryName = (category: Product["category"]): string => {
+    if (typeof category === "string") {
+      return categories.find((c) => c._id === category)?.name || category
+    }
+    return category.name
   }
 
   return (
@@ -146,7 +213,6 @@ export default function AdminProductsPage() {
       <AdminHeader title="Quản lý sản phẩm" description={`${products.length} sản phẩm`} />
 
       <main className="p-6 space-y-6">
-        {/* Actions Bar */}
         <div className="flex flex-col sm:flex-row gap-4 justify-between">
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -155,6 +221,11 @@ export default function AdminProductsPage() {
               placeholder="Tìm kiếm sản phẩm..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  void handleSearch()
+                }
+              }}
               className="pl-9"
             />
           </div>
@@ -164,105 +235,107 @@ export default function AdminProductsPage() {
           </Button>
         </div>
 
-        {/* Products Table */}
         <Card>
           <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16">Ảnh</TableHead>
-                  <TableHead>Tên sản phẩm</TableHead>
-                  <TableHead>Danh mục</TableHead>
-                  <TableHead className="text-right">Giá</TableHead>
-                  <TableHead className="text-center">Kho</TableHead>
-                  <TableHead className="text-center">Đánh giá</TableHead>
-                  <TableHead className="w-12"></TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredProducts.map((product) => (
-                  <TableRow key={product.id}>
-                    <TableCell>
-                      <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-muted">
-                        <Image
-                          src={product.images[0] || "/placeholder.svg"}
-                          alt={product.name}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{product.name}</p>
-                        <p className="text-sm text-muted-foreground line-clamp-1">{product.shortDescription}</p>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="secondary">
-                        {categories.find((c) => c.slug === product.category)?.name || product.category}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div>
-                        <p className="font-medium">{formatCurrency(product.price)}</p>
-                        {product.originalPrice && (
-                          <p className="text-sm text-muted-foreground line-through">
-                            {formatCurrency(product.originalPrice)}
-                          </p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge variant={product.stock > 5 ? "secondary" : product.stock > 0 ? "outline" : "destructive"}>
-                        {product.stock}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <div className="flex items-center justify-center gap-1">
-                        <span className="text-yellow-500">★</span>
-                        <span>{product.rating}</span>
-                        <span className="text-muted-foreground">({product.reviews})</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <a href={`/products/${product.id}`} target="_blank" rel="noreferrer">
-                              <Eye className="h-4 w-4 mr-2" />
-                              Xem
-                            </a>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => openEditDialog(product)}>
-                            <Pencil className="h-4 w-4 mr-2" />
-                            Sửa
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog(product)}>
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Xóa
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-16">Ảnh</TableHead>
+                    <TableHead>Tên sản phẩm</TableHead>
+                    <TableHead>Danh mục</TableHead>
+                    <TableHead className="text-right">Giá</TableHead>
+                    <TableHead className="text-center">Kho</TableHead>
+                    <TableHead className="text-center">Đánh giá</TableHead>
+                    <TableHead className="w-12"></TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredProducts.map((product) => (
+                    <TableRow key={product._id}>
+                      <TableCell>
+                        <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-muted">
+                          <Image
+                            src={getProductImageUrl(product.images[0] || "")}
+                            alt={product.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <p className="font-medium">{product.name}</p>
+                          <p className="text-sm text-muted-foreground line-clamp-1">{product.shortDescription}</p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{getCategoryName(product.category)}</Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div>
+                          <p className="font-medium">{formatCurrency(product.price)}</p>
+                          {product.originalPrice && (
+                            <p className="text-sm text-muted-foreground line-through">
+                              {formatCurrency(product.originalPrice)}
+                            </p>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant={product.stock > 5 ? "secondary" : product.stock > 0 ? "outline" : "destructive"}>
+                          {product.stock}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-1">
+                          <span className="text-yellow-500">★</span>
+                          <span>{product.rating > 0 ? product.rating.toFixed(1) : "0.0"}</span>
+                          <span className="text-muted-foreground">({product.reviews})</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <a href={`/products/${product._id}`} target="_blank" rel="noreferrer">
+                                <Eye className="h-4 w-4 mr-2" />
+                                Xem
+                              </a>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openEditDialog(product)}>
+                              <Pencil className="h-4 w-4 mr-2" />
+                              Sửa
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive" onClick={() => openDeleteDialog(product)}>
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Xóa
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
 
-            {filteredProducts.length === 0 && (
+            {!isLoading && filteredProducts.length === 0 && (
               <div className="text-center py-12 text-muted-foreground">Không tìm thấy sản phẩm nào</div>
             )}
           </CardContent>
         </Card>
       </main>
 
-      {/* Add/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -318,7 +391,7 @@ export default function AdminProductsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
-                      <SelectItem key={category.id} value={category.slug}>
+                      <SelectItem key={category._id} value={category._id}>
                         {category.name}
                       </SelectItem>
                     ))}
@@ -368,7 +441,6 @@ export default function AdminProductsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>

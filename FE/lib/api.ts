@@ -4,7 +4,6 @@ import type {
   Category,
   CategoriesResponse,
   CategoryProductsResponse,
-  Cart,
   CartResponse,
   Order,
   OrdersResponse,
@@ -23,9 +22,8 @@ interface ApiError {
 async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`
   
-  const defaultHeaders: HeadersInit = {
-    "Content-Type": "application/json",
-  }
+  const isFormData = options.body instanceof FormData
+  const defaultHeaders: HeadersInit = isFormData ? {} : { "Content-Type": "application/json" }
 
   const config: RequestInit = {
     ...options,
@@ -54,6 +52,55 @@ export const productsApi = {
   
   getReviews: (id: string): Promise<ReviewsResponse> =>
     fetchApi<ReviewsResponse>(`/api/v1/products/${id}/reviews`),
+  
+  getAllAdmin: (): Promise<{ total_products: number; products: Product[] }> =>
+    fetchApi<{ total_products: number; products: Product[] }>("/api/v1/products/admin"),
+  
+  searchAdmin: (params: {
+    q?: string
+    category?: string
+    minPrice?: number
+    maxPrice?: number
+    inStock?: boolean
+  }): Promise<{ total_products: number; products: Product[] }> => {
+    const queryParams = new URLSearchParams()
+    if (params.q) queryParams.append("q", params.q)
+    if (params.category) queryParams.append("category", params.category)
+    if (params.minPrice !== undefined) queryParams.append("minPrice", params.minPrice.toString())
+    if (params.maxPrice !== undefined) queryParams.append("maxPrice", params.maxPrice.toString())
+    if (params.inStock !== undefined) queryParams.append("inStock", params.inStock.toString())
+    const queryString = queryParams.toString()
+    const endpoint = queryString ? `/api/v1/products/admin/search?${queryString}` : "/api/v1/products/admin/search"
+    return fetchApi<{ total_products: number; products: Product[] }>(endpoint)
+  },
+  
+  create: (data: FormData): Promise<{ product: Product }> =>
+    fetchApi<{ product: Product }>("/api/v1/products", {
+      method: "POST",
+      headers: {},
+      body: data,
+    }),
+  
+  update: (id: string, data: Partial<Product>): Promise<{ product: Product }> =>
+    fetchApi<{ product: Product }>(`/api/v1/products/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  
+  delete: (id: string): Promise<{ msg: string }> =>
+    fetchApi<{ msg: string }>(`/api/v1/products/${id}`, {
+      method: "DELETE",
+    }),
+  
+  uploadImage: (file: File): Promise<{ image: string }> => {
+    const formData = new FormData()
+    formData.append("image", file)
+    return fetchApi<{ image: string }>("/api/v1/products/uploadImage", {
+      method: "POST",
+      headers: {},
+      body: formData,
+    })
+  },
 }
 
 export const categoriesApi = {
@@ -62,6 +109,29 @@ export const categoriesApi = {
   
   getProductsByCategory: (slug: string): Promise<CategoryProductsResponse> =>
     fetchApi<CategoryProductsResponse>(`/api/v1/public/categories/${slug}/products`),
+  
+  getAllAdmin: (): Promise<CategoriesResponse> =>
+    fetchApi<CategoriesResponse>("/api/v1/categories"),
+  
+  getById: (id: string): Promise<{ category: Category }> =>
+    fetchApi<{ category: Category }>(`/api/v1/categories/${id}`),
+  
+  create: (data: { name: string; slug?: string; description?: string }): Promise<{ category: Category }> =>
+    fetchApi<{ category: Category }>("/api/v1/categories", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  
+  update: (id: string, data: { name?: string; slug?: string; description?: string }): Promise<{ category: Category }> =>
+    fetchApi<{ category: Category }>(`/api/v1/categories/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  
+  delete: (id: string): Promise<{ msg: string }> =>
+    fetchApi<{ msg: string }>(`/api/v1/categories/${id}`, {
+      method: "DELETE",
+    }),
 }
 
 export const cartApi = {
@@ -142,6 +212,42 @@ export const usersApi = {
       method: "PATCH",
       body: JSON.stringify({ oldPassword, newPassword }),
     }),
+  
+  getAll: (): Promise<{ total_users: number; users: User[] }> =>
+    fetchApi<{ total_users: number; users: User[] }>("/api/v1/users"),
+  
+  getById: (id: string): Promise<{ user: User }> =>
+    fetchApi<{ user: User }>(`/api/v1/users/${id}`),
+  
+  createAdmin: (data: {
+    name: string
+    email: string
+    password: string
+    role?: "admin" | "user"
+    phone?: string
+    address?: string
+  }): Promise<{ user: User }> =>
+    fetchApi<{ user: User }>("/api/v1/users", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  
+  updateAdmin: (id: string, data: {
+    name?: string
+    email?: string
+    role?: "admin" | "user"
+    phone?: string
+    address?: string
+  }): Promise<{ user: User }> =>
+    fetchApi<{ user: User }>(`/api/v1/users/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  
+  deleteAdmin: (id: string): Promise<{ msg: string }> =>
+    fetchApi<{ msg: string }>(`/api/v1/users/${id}`, {
+      method: "DELETE",
+    }),
 }
 
 export const ordersApi = {
@@ -152,6 +258,51 @@ export const ordersApi = {
   
   getById: (id: string): Promise<{ order: Order }> =>
     fetchApi<{ order: Order }>(`/api/v1/orders/${id}`),
+  
+  create: (data: {
+    orderItems: Array<{ productId: string; quantity: number; color: string }>
+    subtotal: number
+    discount?: number
+    shippingFee?: number
+    tax?: number
+    total: number
+    finalTotal: number
+    shippingAddress: string
+    paymentMethod?: string
+    userPhone?: string
+  }): Promise<{ order: Order }> =>
+    fetchApi<{ order: Order }>("/api/v1/orders", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  
+  update: (id: string, data: { status?: Order["status"]; paymentStatus?: Order["paymentStatus"] }): Promise<{ order: Order }> =>
+    fetchApi<{ order: Order }>(`/api/v1/orders/${id}`, {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+  
+  delete: (id: string): Promise<{ msg: string }> =>
+    fetchApi<{ msg: string }>(`/api/v1/orders/${id}`, {
+      method: "DELETE",
+    }),
+  
+  createOfflineAdmin: (data: {
+    items: Array<{ productId: string; quantity: number; color: string }>
+    discountCode?: string
+    userId?: string
+    userName: string
+    userEmail: string
+    userPhone?: string
+    shippingAddress: string
+    paymentStatus?: "pending" | "paid" | "failed"
+    status?: "pending" | "confirmed" | "shipping" | "delivered" | "cancelled"
+    paymentMethod?: string
+  }): Promise<{ order: Order }> =>
+    fetchApi<{ order: Order }>("/api/v1/orders/admin/offline", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 }
 
 export const checkoutApi = {
@@ -165,6 +316,19 @@ export const checkoutApi = {
       method: "POST",
       body: JSON.stringify(data),
     }),
+  
+  handleVnpayReturn: (queryParams: Record<string, string>): Promise<{
+    msg: string
+    orderId: string
+    status: string
+    paymentStatus: string
+  }> =>
+    fetchApi<{
+      msg: string
+      orderId: string
+      status: string
+      paymentStatus: string
+    }>(`/api/v1/checkout/vnpay-return?${new URLSearchParams(queryParams).toString()}`),
 }
 
 export const reviewsApi = {
@@ -203,6 +367,7 @@ export const discountsApi = {
   getById: (id: string): Promise<{ discount: Discount }> =>
     fetchApi<{ discount: Discount }>(`/api/v1/discounts/${id}`),
   
+  
   create: (data: {
     code: string
     discountType: "percent" | "fixed"
@@ -240,3 +405,7 @@ export const discountsApi = {
       method: "DELETE",
     }),
 }
+
+
+
+

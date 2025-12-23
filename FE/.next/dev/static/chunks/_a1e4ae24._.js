@@ -39,7 +39,8 @@ var __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$constants$2e$ts__$5b$
 ;
 async function fetchApi(endpoint, options = {}) {
     const url = `${__TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$constants$2e$ts__$5b$app$2d$client$5d$__$28$ecmascript$29$__["API_BASE_URL"]}${endpoint}`;
-    const defaultHeaders = {
+    const isFormData = options.body instanceof FormData;
+    const defaultHeaders = isFormData ? {} : {
         "Content-Type": "application/json"
     };
     const config = {
@@ -62,11 +63,57 @@ async function fetchApi(endpoint, options = {}) {
 const productsApi = {
     getAll: ()=>fetchApi("/api/v1/products"),
     getById: (id)=>fetchApi(`/api/v1/products/${id}`),
-    getReviews: (id)=>fetchApi(`/api/v1/products/${id}/reviews`)
+    getReviews: (id)=>fetchApi(`/api/v1/products/${id}/reviews`),
+    getAllAdmin: ()=>fetchApi("/api/v1/products/admin"),
+    searchAdmin: (params)=>{
+        const queryParams = new URLSearchParams();
+        if (params.q) queryParams.append("q", params.q);
+        if (params.category) queryParams.append("category", params.category);
+        if (params.minPrice !== undefined) queryParams.append("minPrice", params.minPrice.toString());
+        if (params.maxPrice !== undefined) queryParams.append("maxPrice", params.maxPrice.toString());
+        if (params.inStock !== undefined) queryParams.append("inStock", params.inStock.toString());
+        const queryString = queryParams.toString();
+        const endpoint = queryString ? `/api/v1/products/admin/search?${queryString}` : "/api/v1/products/admin/search";
+        return fetchApi(endpoint);
+    },
+    create: (data)=>fetchApi("/api/v1/products", {
+            method: "POST",
+            headers: {},
+            body: data
+        }),
+    update: (id, data)=>fetchApi(`/api/v1/products/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify(data)
+        }),
+    delete: (id)=>fetchApi(`/api/v1/products/${id}`, {
+            method: "DELETE"
+        }),
+    uploadImage: (file)=>{
+        const formData = new FormData();
+        formData.append("image", file);
+        return fetchApi("/api/v1/products/uploadImage", {
+            method: "POST",
+            headers: {},
+            body: formData
+        });
+    }
 };
 const categoriesApi = {
     getAll: ()=>fetchApi("/api/v1/public/categories"),
-    getProductsByCategory: (slug)=>fetchApi(`/api/v1/public/categories/${slug}/products`)
+    getProductsByCategory: (slug)=>fetchApi(`/api/v1/public/categories/${slug}/products`),
+    getAllAdmin: ()=>fetchApi("/api/v1/categories"),
+    getById: (id)=>fetchApi(`/api/v1/categories/${id}`),
+    create: (data)=>fetchApi("/api/v1/categories", {
+            method: "POST",
+            body: JSON.stringify(data)
+        }),
+    update: (id, data)=>fetchApi(`/api/v1/categories/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify(data)
+        }),
+    delete: (id)=>fetchApi(`/api/v1/categories/${id}`, {
+            method: "DELETE"
+        })
 };
 const cartApi = {
     get: ()=>fetchApi("/api/v1/cart"),
@@ -125,18 +172,47 @@ const usersApi = {
                 oldPassword,
                 newPassword
             })
+        }),
+    getAll: ()=>fetchApi("/api/v1/users"),
+    getById: (id)=>fetchApi(`/api/v1/users/${id}`),
+    createAdmin: (data)=>fetchApi("/api/v1/users", {
+            method: "POST",
+            body: JSON.stringify(data)
+        }),
+    updateAdmin: (id, data)=>fetchApi(`/api/v1/users/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify(data)
+        }),
+    deleteAdmin: (id)=>fetchApi(`/api/v1/users/${id}`, {
+            method: "DELETE"
         })
 };
 const ordersApi = {
     getAll: ()=>fetchApi("/api/v1/orders"),
     getMyOrders: ()=>fetchApi("/api/v1/orders/showAllMyOrders"),
-    getById: (id)=>fetchApi(`/api/v1/orders/${id}`)
+    getById: (id)=>fetchApi(`/api/v1/orders/${id}`),
+    create: (data)=>fetchApi("/api/v1/orders", {
+            method: "POST",
+            body: JSON.stringify(data)
+        }),
+    update: (id, data)=>fetchApi(`/api/v1/orders/${id}`, {
+            method: "PATCH",
+            body: JSON.stringify(data)
+        }),
+    delete: (id)=>fetchApi(`/api/v1/orders/${id}`, {
+            method: "DELETE"
+        }),
+    createOfflineAdmin: (data)=>fetchApi("/api/v1/orders/admin/offline", {
+            method: "POST",
+            body: JSON.stringify(data)
+        })
 };
 const checkoutApi = {
     createOrder: (data)=>fetchApi("/api/v1/checkout/vnpay", {
             method: "POST",
             body: JSON.stringify(data)
-        })
+        }),
+    handleVnpayReturn: (queryParams)=>fetchApi(`/api/v1/checkout/vnpay-return?${new URLSearchParams(queryParams).toString()}`)
 };
 const reviewsApi = {
     create: (data)=>fetchApi("/api/v1/reviews", {

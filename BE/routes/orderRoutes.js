@@ -26,7 +26,7 @@ router.route("/showAllMyOrders").get(authenticateUser, getCurrentUserOrder)
 
 router
   .route("/:id")
-  .get(authenticateUser, authorizePermissions("admin"), getSingleOrder)
+  .get(authenticateUser, getSingleOrder)
   .patch(authenticateUser, authorizePermissions("admin"), updateOrder)
   .delete(authenticateUser, authorizePermissions("admin"), deleteOrder)
 
