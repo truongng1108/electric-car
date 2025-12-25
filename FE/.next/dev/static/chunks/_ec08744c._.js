@@ -3564,7 +3564,7 @@ function CheckoutPage() {
         columnNumber: 5
     }, this);
 }
-_s(CheckoutPage, "Sa5x8ks3I739tEtRA55K5uCs36g=", false, function() {
+_s(CheckoutPage, "cwD5MbuhESgL9VOtghWZOT6ps3w=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f2e$pnpm$2f$next$40$16$2e$0$2e$7_react$2d$dom$40$19$2e$2$2e$0_react$40$19$2e$2$2e$0_$5f$react$40$19$2e$2$2e$0$2f$node_modules$2f$next$2f$navigation$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useRouter"],
         __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$cart$2d$context$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCart"],

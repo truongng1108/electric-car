@@ -30,7 +30,7 @@ __turbopack_context__.s([
     "API_BASE_URL",
     ()=>API_BASE_URL
 ]);
-const API_BASE_URL = ("TURBOPACK compile-time value", "http://localhost:5000") || "http://localhost:5000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
 }),
 "[project]/lib/api.ts [app-ssr] (ecmascript)", ((__turbopack_context__) => {
 "use strict";

@@ -3988,7 +3988,7 @@ function ProductPage({ params }) {
         columnNumber: 5
     }, this);
 }
-_s(ProductPage, "jLN2dLgAsCl4V0c0no8mDk9xdu8=", false, function() {
+_s(ProductPage, "jPfmcmOt/fAMdTgZxPTP3VnotNU=", false, function() {
     return [
         __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$cart$2d$context$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useCart"],
         __TURBOPACK__imported__module__$5b$project$5d2f$lib$2f$auth$2d$context$2e$tsx__$5b$app$2d$client$5d$__$28$ecmascript$29$__["useAuth"],

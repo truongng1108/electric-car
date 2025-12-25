@@ -1,8 +1,28 @@
 const crypto = require("crypto")
-const qs = require("qs")
+
+const encodeParam = (value) => encodeURIComponent(String(value)).replace(/%20/g, "+")
+
+const buildSignedQuery = (params) => {
+  const entries = Object.entries(params)
+    .filter(([, value]) => value != null && value !== "")
+    .map(([key, value]) => [encodeURIComponent(key), encodeParam(value)])
+    .sort((a, b) => a[0].localeCompare(b[0]))
+
+  const signData = entries.map(([key, value]) => `${key}=${value}`).join("&")
+  return { signData, query: signData }
+}
 
 // Build payment URL for VNPay sandbox
-const createPaymentUrl = ({ amount, orderId, orderInfo, ipAddr, returnUrl }) => {
+const createPaymentUrl = ({ amount, orderId, orderInfo, ipAddr, returnUrl, bankCode }) => {
+  const date = new Date()
+  const createDate =
+    date.getFullYear() +
+    ("0" + (date.getMonth() + 1)).slice(-2) +
+    ("0" + date.getDate()).slice(-2) +
+    ("0" + date.getHours()).slice(-2) +
+    ("0" + date.getMinutes()).slice(-2) +
+    ("0" + date.getSeconds()).slice(-2)
+
   const vnpParams = {
     vnp_Version: "2.1.0",
     vnp_Command: "pay",
@@ -12,34 +32,40 @@ const createPaymentUrl = ({ amount, orderId, orderInfo, ipAddr, returnUrl }) => 
     vnp_TxnRef: orderId,
     vnp_OrderInfo: orderInfo,
     vnp_OrderType: "other",
-    vnp_Amount: amount * 100, // VNPay expects amount in smallest currency unit
+    vnp_Amount: Math.floor(amount * 100),
     vnp_ReturnUrl: returnUrl,
-    vnp_IpAddr: ipAddr || "0.0.0.0",
-    vnp_CreateDate: new Date().toISOString().replace(/[-:TZ.]/g, "").slice(0, 14),
+    vnp_IpAddr: ipAddr || "127.0.0.1",
+    vnp_CreateDate: createDate,
   }
 
-  const signData = qs.stringify(vnpParams, { encode: false })
+  if (bankCode) {
+    vnpParams.vnp_BankCode = bankCode
+  }
+
+  const { signData, query } = buildSignedQuery(vnpParams)
+
   const hmac = crypto.createHmac("sha512", process.env.VNPAY_HASH_SECRET)
   const secureHash = hmac.update(Buffer.from(signData, "utf-8")).digest("hex")
-  vnpParams.vnp_SecureHash = secureHash
 
   const vnpUrl = process.env.VNPAY_URL || "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html"
-  return `${vnpUrl}?${qs.stringify(vnpParams, { encode: true })}`
+  // Add SecureHashType only on the URL (not in signed data) per VNPay docs
+  return `${vnpUrl}?${query}&vnp_SecureHashType=SHA512&vnp_SecureHash=${secureHash}`
 }
 
 // Verify return data from VNPay
 const verifyReturn = (query) => {
-  const { vnp_SecureHash, vnp_SecureHashType, ...rest } = query
-  const sorted = {}
-  Object.keys(rest)
-    .sort()
-    .forEach((key) => {
-      sorted[key] = rest[key]
-    })
-  const signData = qs.stringify(sorted, { encode: false })
+  let vnp_Params = query
+  const secureHash = vnp_Params.vnp_SecureHash
+
+  delete vnp_Params.vnp_SecureHash
+  delete vnp_Params.vnp_SecureHashType
+
+  const { signData } = buildSignedQuery(vnp_Params)
+
   const hmac = crypto.createHmac("sha512", process.env.VNPAY_HASH_SECRET)
   const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex")
-  return signed === vnp_SecureHash
+
+  return signed === secureHash
 }
 
 module.exports = {
