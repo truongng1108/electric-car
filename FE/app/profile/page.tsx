@@ -13,14 +13,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 import { useAuth } from "@/lib/auth-context"
 import { usersApi } from "@/lib/api"
-import { useToast } from "@/hooks/use-toast"
-import { Toaster } from "@/components/ui/toaster"
+import { toast } from "sonner"
 import { getErrorMessage } from "@/lib/error-handler"
 
 export default function ProfilePage() {
   const router = useRouter()
   const { user, isLoading: authLoading, isAuthenticated } = useAuth()
-  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [isChangingPassword, setIsChangingPassword] = useState(false)
@@ -57,10 +55,7 @@ export default function ProfilePage() {
 
   const handleSaveProfile = async () => {
     if (!profileData.name || !profileData.email) {
-      toast({
-        title: "Vui lòng điền đầy đủ thông tin",
-        variant: "destructive",
-      })
+      toast.error("Vui lòng điền đầy đủ thông tin")
       return
     }
 
@@ -72,14 +67,10 @@ export default function ProfilePage() {
         phone: profileData.phone || undefined,
         address: profileData.address || undefined,
       })
-      toast({ title: "Cập nhật thông tin thành công" })
+      toast.success("Cập nhật thông tin thành công")
       window.location.reload()
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     } finally {
       setIsSaving(false)
     }
@@ -87,44 +78,31 @@ export default function ProfilePage() {
 
   const handleChangePassword = async () => {
     if (!passwordData.oldPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
-      toast({
-        title: "Vui lòng điền đầy đủ thông tin",
-        variant: "destructive",
-      })
+      toast.error("Vui lòng điền đầy đủ thông tin")
       return
     }
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast({
-        title: "Mật khẩu mới không khớp",
-        variant: "destructive",
-      })
+      toast.error("Mật khẩu mới không khớp")
       return
     }
 
     if (passwordData.newPassword.length < 6) {
-      toast({
-        title: "Mật khẩu phải có ít nhất 6 ký tự",
-        variant: "destructive",
-      })
+      toast.error("Mật khẩu phải có ít nhất 6 ký tự")
       return
     }
 
     try {
       setIsChangingPassword(true)
       await usersApi.updatePassword(passwordData.oldPassword, passwordData.newPassword)
-      toast({ title: "Đổi mật khẩu thành công" })
+      toast.success("Đổi mật khẩu thành công")
       setPasswordData({
         oldPassword: "",
         newPassword: "",
         confirmPassword: "",
       })
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     } finally {
       setIsChangingPassword(false)
     }
@@ -291,7 +269,6 @@ export default function ProfilePage() {
         </div>
       </main>
       <Footer />
-      <Toaster />
     </>
   )
 }

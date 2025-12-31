@@ -11,13 +11,11 @@ import { Card, CardContent } from "@/components/ui/card"
 import { checkoutApi } from "@/lib/api"
 import { logger } from "@/lib/logger"
 import { getErrorMessage } from "@/lib/error-handler"
-import { useToast } from "@/hooks/use-toast"
-import { Toaster } from "@/components/ui/toaster"
+import { toast } from "sonner"
 
 export default function CheckoutSuccessPage() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(true)
   const [orderStatus, setOrderStatus] = useState<{
     success: boolean
@@ -55,18 +53,14 @@ export default function CheckoutSuccessPage() {
           success: false,
           message: getErrorMessage(error),
         })
-        toast({
-          title: "Lỗi",
-          description: getErrorMessage(error),
-          variant: "destructive",
-        })
+        toast.error(getErrorMessage(error))
       } finally {
         setIsLoading(false)
       }
     }
 
     handleVnpayReturn()
-  }, [searchParams, toast])
+  }, [searchParams])
 
   if (isLoading) {
     return (
@@ -157,7 +151,6 @@ export default function CheckoutSuccessPage() {
         </div>
       </main>
       <Footer />
-      <Toaster />
     </div>
   )
 }

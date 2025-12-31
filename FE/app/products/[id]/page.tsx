@@ -17,8 +17,7 @@ import { hasDiscount, calculateDiscountPercent } from "@/lib/product-helpers"
 import type { Product } from "@/lib/types"
 import { useCart } from "@/lib/cart-context"
 import { useAuth } from "@/lib/auth-context"
-import { useToast } from "@/hooks/use-toast"
-import { Toaster } from "@/components/ui/toaster"
+import { toast } from "sonner"
 
 interface ProductPageProps {
   readonly params: Promise<{ id: string }>
@@ -33,7 +32,6 @@ export default function ProductPage({ params }: ProductPageProps) {
   const [quantity, setQuantity] = useState(1)
   const { addItem } = useCart()
   const { isAuthenticated } = useAuth()
-  const { toast } = useToast()
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -77,26 +75,15 @@ export default function ProductPage({ params }: ProductPageProps) {
 
   const handleAddToCart = async () => {
     if (!isAuthenticated) {
-      toast({
-        title: "Vui lòng đăng nhập",
-        description: "Bạn cần đăng nhập để thêm sản phẩm vào giỏ hàng",
-        variant: "destructive",
-      })
+      toast.error("Bạn cần đăng nhập để thêm sản phẩm vào giỏ hàng")
       return
     }
 
     try {
       await addItem(product, quantity, selectedColor.name)
-      toast({
-        title: "Đã thêm vào giỏ hàng",
-        description: `${quantity}x ${product.name} (${selectedColor.name})`,
-      })
+      toast.success(`Đã thêm ${quantity}x ${product.name} (${selectedColor.name}) vào giỏ hàng`)
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     }
   }
 
@@ -324,7 +311,6 @@ export default function ProductPage({ params }: ProductPageProps) {
         </div>
       </main>
       <Footer />
-      <Toaster />
     </div>
   )
 }

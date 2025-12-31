@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { useCart } from "@/lib/cart-context"
 import { useAuth } from "@/lib/auth-context"
-import { useToast } from "@/hooks/use-toast"
+import { toast } from "sonner"
 import { getErrorMessage } from "@/lib/error-handler"
 
 const navigation = [
@@ -34,22 +34,14 @@ export function Header() {
   const [isSearchOpen, setIsSearchOpen] = useState(false)
   const { itemCount } = useCart()
   const { isAuthenticated, user, logout, isAdmin } = useAuth()
-  const { toast } = useToast()
 
   const handleLogout = async () => {
     try {
       await logout()
-      toast({
-        title: "Đăng xuất thành công",
-        description: "Hẹn gặp lại bạn!",
-      })
+      toast.success("Đăng xuất thành công! Hẹn gặp lại bạn!")
       router.push("/")
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     }
   }
 

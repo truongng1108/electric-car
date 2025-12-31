@@ -20,10 +20,9 @@ import {
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { usersApi } from "@/lib/api"
-import { useToast } from "@/hooks/use-toast"
-import { Toaster } from "@/components/ui/toaster"
 import type { User } from "@/lib/types"
 import { getErrorMessage } from "@/lib/error-handler"
+import { toast } from "sonner"
 
 export default function AdminUsersPage() {
   const [users, setUsers] = useState<User[]>([])
@@ -40,7 +39,6 @@ export default function AdminUsersPage() {
     phone: "",
     address: "",
   })
-  const { toast } = useToast()
 
   const fetchUsers = useCallback(async () => {
     try {
@@ -48,11 +46,7 @@ export default function AdminUsersPage() {
       const response = await usersApi.getAll()
       setUsers(response.users)
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     } finally {
       setIsLoading(false)
     }
@@ -101,18 +95,12 @@ export default function AdminUsersPage() {
 
   const handleSave = async () => {
     if (!formData.name || !formData.email) {
-      toast({
-        title: "Vui lòng điền đầy đủ thông tin",
-        variant: "destructive",
-      })
+      toast.error("Vui lòng điền đầy đủ thông tin")
       return
     }
 
     if (!selectedUser && !formData.password) {
-      toast({
-        title: "Vui lòng nhập mật khẩu",
-        variant: "destructive",
-      })
+      toast.error("Vui lòng nhập mật khẩu")
       return
     }
 
@@ -125,7 +113,7 @@ export default function AdminUsersPage() {
           phone: formData.phone || undefined,
           address: formData.address || undefined,
         })
-        toast({ title: "Cập nhật người dùng thành công" })
+        toast.success("Đã cập nhật người dùng thành công")
       } else {
         await usersApi.createAdmin({
           name: formData.name,
@@ -135,16 +123,12 @@ export default function AdminUsersPage() {
           phone: formData.phone || undefined,
           address: formData.address || undefined,
         })
-        toast({ title: "Thêm người dùng thành công" })
+        toast.success("Đã thêm người dùng mới thành công")
       }
       setIsDialogOpen(false)
       void fetchUsers()
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     }
   }
 
@@ -152,15 +136,11 @@ export default function AdminUsersPage() {
     if (selectedUser && selectedUser._id) {
       try {
         await usersApi.deleteAdmin(selectedUser._id)
-        toast({ title: "Xóa người dùng thành công" })
+        toast.success("Đã xóa người dùng thành công")
         setIsDeleteDialogOpen(false)
         void fetchUsers()
       } catch (error) {
-        toast({
-          title: "Lỗi",
-          description: getErrorMessage(error),
-          variant: "destructive",
-        })
+        toast.error(getErrorMessage(error))
       }
     }
   }
@@ -359,8 +339,6 @@ export default function AdminUsersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <Toaster />
     </>
   )
 }

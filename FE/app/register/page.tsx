@@ -10,14 +10,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/lib/auth-context"
-import { useToast } from "@/hooks/use-toast"
-import { Toaster } from "@/components/ui/toaster"
+import { toast } from "sonner"
 import { getErrorMessage } from "@/lib/error-handler"
 
 export default function RegisterPage() {
   const router = useRouter()
   const { register, isAuthenticated, isLoading: authLoading } = useAuth()
-  const { toast } = useToast()
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -63,29 +61,17 @@ export default function RegisterPage() {
     e.preventDefault()
 
     if (!formData.name.trim() || !formData.email.trim() || !formData.password.trim()) {
-      toast({
-        title: "Lỗi",
-        description: "Vui lòng điền đầy đủ thông tin bắt buộc",
-        variant: "destructive",
-      })
+      toast.error("Vui lòng điền đầy đủ thông tin bắt buộc")
       return
     }
 
     if (formData.password !== formData.confirmPassword) {
-      toast({
-        title: "Lỗi",
-        description: "Mật khẩu xác nhận không khớp",
-        variant: "destructive",
-      })
+      toast.error("Mật khẩu xác nhận không khớp")
       return
     }
 
     if (formData.password.length < 6) {
-      toast({
-        title: "Lỗi",
-        description: "Mật khẩu phải có ít nhất 6 ký tự",
-        variant: "destructive",
-      })
+      toast.error("Mật khẩu phải có ít nhất 6 ký tự")
       return
     }
 
@@ -98,17 +84,10 @@ export default function RegisterPage() {
         phone: formData.phone.trim() || undefined,
         address: formData.address.trim() || undefined,
       })
-      toast({
-        title: "Đăng ký thành công",
-        description: "Chào mừng bạn đến với EV Car!",
-      })
+      toast.success("Đăng ký thành công! Chào mừng bạn đến với EV Car!")
       router.push("/")
     } catch (error) {
-      toast({
-        title: "Đăng ký thất bại",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     } finally {
       setIsLoading(false)
     }
@@ -292,7 +271,6 @@ export default function RegisterPage() {
         </div>
       </main>
       <Footer />
-      <Toaster />
     </div>
   )
 }

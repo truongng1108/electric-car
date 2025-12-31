@@ -10,14 +10,12 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { useAuth } from "@/lib/auth-context"
-import { useToast } from "@/hooks/use-toast"
-import { Toaster } from "@/components/ui/toaster"
+import { toast } from "sonner"
 import { getErrorMessage } from "@/lib/error-handler"
 
 export default function LoginPage() {
   const router = useRouter()
   const { login, isAuthenticated, isLoading: authLoading } = useAuth()
-  const { toast } = useToast()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
@@ -49,28 +47,17 @@ export default function LoginPage() {
     e.preventDefault()
     
     if (!email.trim() || !password.trim()) {
-      toast({
-        title: "Lỗi",
-        description: "Vui lòng điền đầy đủ thông tin",
-        variant: "destructive",
-      })
+      toast.error("Vui lòng điền đầy đủ thông tin")
       return
     }
 
     setIsLoading(true)
     try {
       await login(email.trim(), password)
-      toast({
-        title: "Đăng nhập thành công",
-        description: "Chào mừng bạn quay trở lại!",
-      })
+      toast.success("Đăng nhập thành công! Chào mừng bạn quay trở lại!")
       router.push("/")
     } catch (error) {
-      toast({
-        title: "Đăng nhập thất bại",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     } finally {
       setIsLoading(false)
     }
@@ -167,7 +154,6 @@ export default function LoginPage() {
         </div>
       </main>
       <Footer />
-      <Toaster />
     </div>
   )
 }

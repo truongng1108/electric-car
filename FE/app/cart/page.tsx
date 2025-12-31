@@ -20,8 +20,7 @@ import {
   getProductStock,
   getProductImage,
 } from "@/lib/product-helpers"
-import { useToast } from "@/hooks/use-toast"
-import { Toaster } from "@/components/ui/toaster"
+import { toast } from "sonner"
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, total, clearCart, isLoading } = useCart()
@@ -31,14 +30,10 @@ export default function CartPage() {
     code: string
     amount: number
   } | null>(null)
-  const { toast } = useToast()
 
   const applyDiscount = () => {
     setAppliedDiscount({ code: discountCode, amount: 0 })
-    toast({
-      title: "Mã giảm giá sẽ được áp dụng khi thanh toán",
-      description: "Mã giảm giá sẽ được kiểm tra và áp dụng khi bạn tiến hành thanh toán",
-    })
+    toast.info("Mã giảm giá sẽ được kiểm tra và áp dụng khi bạn tiến hành thanh toán")
   }
 
   const removeDiscount = () => {
@@ -118,11 +113,7 @@ export default function CartPage() {
                   try {
                     await removeItem(productId, item.color)
                   } catch (error) {
-                    toast({
-                      title: "Lỗi",
-                      description: getErrorMessage(error),
-                      variant: "destructive",
-                    })
+                    toast.error(getErrorMessage(error))
                   }
                 }
 
@@ -130,11 +121,7 @@ export default function CartPage() {
                   try {
                     await updateQuantity(productId, item.color, item.quantity - 1)
                   } catch (error) {
-                    toast({
-                      title: "Lỗi",
-                      description: getErrorMessage(error),
-                      variant: "destructive",
-                    })
+                    toast.error(getErrorMessage(error))
                   }
                 }
 
@@ -142,11 +129,7 @@ export default function CartPage() {
                   try {
                     await updateQuantity(productId, item.color, Math.min(productStock, item.quantity + 1))
                   } catch (error) {
-                    toast({
-                      title: "Lỗi",
-                      description: getErrorMessage(error),
-                      variant: "destructive",
-                    })
+                    toast.error(getErrorMessage(error))
                   }
                 }
 
@@ -214,16 +197,9 @@ export default function CartPage() {
                   onClick={async () => {
                     try {
                       await clearCart()
-                      toast({
-                        title: "Đã xóa giỏ hàng",
-                        description: "Tất cả sản phẩm đã được xóa khỏi giỏ hàng",
-                      })
+                      toast.success("Tất cả sản phẩm đã được xóa khỏi giỏ hàng")
                     } catch (error) {
-                      toast({
-                        title: "Lỗi",
-                        description: getErrorMessage(error),
-                        variant: "destructive",
-                      })
+                      toast.error(getErrorMessage(error))
                     }
                   }}
                 >
@@ -315,7 +291,6 @@ export default function CartPage() {
         </div>
       </main>
       <Footer />
-      <Toaster />
     </div>
   )
 }

@@ -19,10 +19,9 @@ import {
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { categoriesApi } from "@/lib/api"
-import { useToast } from "@/hooks/use-toast"
-import { Toaster } from "@/components/ui/toaster"
 import type { Category } from "@/lib/types"
 import { getErrorMessage } from "@/lib/error-handler"
+import { toast } from "sonner"
 
 export default function AdminCategoriesPage() {
   const [categories, setCategories] = useState<Category[]>([])
@@ -36,7 +35,6 @@ export default function AdminCategoriesPage() {
     slug: "",
     description: "",
   })
-  const { toast } = useToast()
 
   const fetchCategories = useCallback(async () => {
     try {
@@ -44,11 +42,7 @@ export default function AdminCategoriesPage() {
       const response = await categoriesApi.getAllAdmin()
       setCategories(response.categories)
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     } finally {
       setIsLoading(false)
     }
@@ -100,10 +94,7 @@ export default function AdminCategoriesPage() {
 
   const handleSave = async () => {
     if (!formData.name) {
-      toast({
-        title: "Vui lòng điền tên danh mục",
-        variant: "destructive",
-      })
+      toast.error("Vui lòng điền tên danh mục")
       return
     }
 
@@ -115,23 +106,19 @@ export default function AdminCategoriesPage() {
           slug,
           description: formData.description || undefined,
         })
-        toast({ title: "Cập nhật danh mục thành công" })
+        toast.success("Đã cập nhật danh mục thành công")
       } else {
         await categoriesApi.create({
           name: formData.name,
           slug,
           description: formData.description || undefined,
         })
-        toast({ title: "Thêm danh mục thành công" })
+        toast.success("Đã thêm danh mục mới thành công")
       }
       setIsDialogOpen(false)
       void fetchCategories()
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     }
   }
 
@@ -139,15 +126,11 @@ export default function AdminCategoriesPage() {
     if (selectedCategory) {
       try {
         await categoriesApi.delete(selectedCategory._id)
-        toast({ title: "Xóa danh mục thành công" })
+        toast.success("Đã xóa danh mục thành công")
         setIsDeleteDialogOpen(false)
         void fetchCategories()
       } catch (error) {
-        toast({
-          title: "Lỗi",
-          description: getErrorMessage(error),
-          variant: "destructive",
-        })
+        toast.error(getErrorMessage(error))
       }
     }
   }
@@ -304,8 +287,6 @@ export default function AdminCategoriesPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <Toaster />
     </>
   )
 }

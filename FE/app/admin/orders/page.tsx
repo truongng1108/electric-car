@@ -23,12 +23,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Separator } from "@/components/ui/separator"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { ordersApi } from "@/lib/api"
-import { formatCurrency, getStatusLabel, getPaymentStatusLabel, getProductImageUrl } from "@/lib/utils"
-import { useToast } from "@/hooks/use-toast"
-import { Toaster } from "@/components/ui/toaster"
+import { formatCurrency, getStatusLabel, getPaymentStatusLabel } from "@/lib/utils"
 import type { Order } from "@/lib/types"
 import { getErrorMessage } from "@/lib/error-handler"
 import { getProductName, getProductImage } from "@/lib/product-helpers"
+import { toast } from "sonner"
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400",
@@ -60,7 +59,6 @@ export default function AdminOrdersPage() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  const { toast } = useToast()
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -68,11 +66,7 @@ export default function AdminOrdersPage() {
       const response = await ordersApi.getAll()
       setOrders(response.orders)
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     } finally {
       setIsLoading(false)
     }
@@ -107,13 +101,9 @@ export default function AdminOrdersPage() {
     try {
       await ordersApi.update(orderId, { status: newStatus })
       setOrders((prev) => prev.map((order) => (order._id === orderId ? { ...order, status: newStatus } : order)))
-      toast({ title: `Đã cập nhật trạng thái đơn hàng thành "${getStatusLabel(newStatus)}"` })
+      toast.success(`Đã cập nhật trạng thái đơn hàng thành "${getStatusLabel(newStatus)}"`)
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     }
   }
 
@@ -122,14 +112,10 @@ export default function AdminOrdersPage() {
       try {
         await ordersApi.delete(selectedOrder._id)
         setOrders((prev) => prev.filter((o) => o._id !== selectedOrder._id))
-        toast({ title: "Xóa đơn hàng thành công" })
+        toast.success("Đã xóa đơn hàng thành công")
         setIsDeleteDialogOpen(false)
       } catch (error) {
-        toast({
-          title: "Lỗi",
-          description: getErrorMessage(error),
-          variant: "destructive",
-        })
+        toast.error(getErrorMessage(error))
       }
     }
   }
@@ -218,13 +204,16 @@ export default function AdminOrdersPage() {
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
-                            {order.orderItems.slice(0, 2).map((item, index) => (
-                              <Badge key={`${item.product}-${index}`} variant="outline" className="text-xs">
+                            {order.orderItems.slice(0, 2).map((item, index) => {
+                              const productId = typeof item.product === "string" ? item.product : item.product._id
+                              return (
+                              <Badge key={`${productId}-${item.color}-${index}`} variant="outline" className="text-xs">
                                 {getProductName(item).length > 15
                                   ? getProductName(item).substring(0, 15) + "..."
                                   : getProductName(item)}
                               </Badge>
-                            ))}
+                              )
+                            })}
                             {order.orderItems.length > 2 && (
                               <Badge variant="outline" className="text-xs">
                                 +{order.orderItems.length - 2}
@@ -336,8 +325,10 @@ export default function AdminOrdersPage() {
               <div>
                 <h4 className="font-medium mb-3">Sản phẩm</h4>
                 <div className="space-y-3">
-                  {selectedOrder.orderItems.map((item, index) => (
-                    <div key={`${item.product}-${index}`} className="flex items-center gap-3">
+                  {selectedOrder.orderItems.map((item, index) => {
+                    const productId = typeof item.product === "string" ? item.product : item.product._id
+                    return (
+                    <div key={`${productId}-${item.color}-${index}`} className="flex items-center gap-3">
                       <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-muted shrink-0">
                         <img
                           src={getProductImage(item)}
@@ -353,7 +344,8 @@ export default function AdminOrdersPage() {
                       </div>
                       <p className="font-medium shrink-0">{formatCurrency(item.price * item.quantity)}</p>
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </div>
 
@@ -417,8 +409,6 @@ export default function AdminOrdersPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <Toaster />
     </>
   )
 }

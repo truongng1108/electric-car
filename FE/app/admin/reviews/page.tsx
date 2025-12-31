@@ -17,11 +17,10 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { reviewsApi, productsApi } from "@/lib/api"
-import { useToast } from "@/hooks/use-toast"
-import { Toaster } from "@/components/ui/toaster"
 import type { Review, Product } from "@/lib/types"
 import { getErrorMessage } from "@/lib/error-handler"
 import { formatDate } from "@/lib/date-helpers"
+import { toast } from "sonner"
 
 export default function AdminReviewsPage() {
   const [reviews, setReviews] = useState<Review[]>([])
@@ -30,7 +29,6 @@ export default function AdminReviewsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedReview, setSelectedReview] = useState<Review | null>(null)
-  const { toast } = useToast()
 
   const fetchReviews = useCallback(async () => {
     try {
@@ -61,11 +59,7 @@ export default function AdminReviewsPage() {
       })
       setProducts(productMap)
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     } finally {
       setIsLoading(false)
     }
@@ -98,15 +92,11 @@ export default function AdminReviewsPage() {
     if (selectedReview) {
       try {
         await reviewsApi.delete(selectedReview._id)
-        toast({ title: "Xóa đánh giá thành công" })
+        toast.success("Đã xóa đánh giá thành công")
         setIsDeleteDialogOpen(false)
         void fetchReviews()
       } catch (error) {
-        toast({
-          title: "Lỗi",
-          description: getErrorMessage(error),
-          variant: "destructive",
-        })
+        toast.error(getErrorMessage(error))
       }
     }
   }
@@ -251,8 +241,6 @@ export default function AdminReviewsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <Toaster />
     </>
   )
 }

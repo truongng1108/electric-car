@@ -21,10 +21,9 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { discountsApi } from "@/lib/api"
 import { formatCurrency } from "@/lib/utils"
-import { useToast } from "@/hooks/use-toast"
-import { Toaster } from "@/components/ui/toaster"
 import type { Discount } from "@/lib/types"
 import { getErrorMessage } from "@/lib/error-handler"
+import { toast } from "sonner"
 
 export default function AdminDiscountsPage() {
   const [discounts, setDiscounts] = useState<Discount[]>([])
@@ -44,7 +43,6 @@ export default function AdminDiscountsPage() {
     endDate: "",
     isActive: true,
   })
-  const { toast } = useToast()
 
   const fetchDiscounts = useCallback(async () => {
     try {
@@ -52,11 +50,7 @@ export default function AdminDiscountsPage() {
       const response = await discountsApi.getAll()
       setDiscounts(response.discounts)
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     } finally {
       setIsLoading(false)
     }
@@ -109,10 +103,7 @@ export default function AdminDiscountsPage() {
 
   const handleSave = async () => {
     if (!formData.code || !formData.discountValue) {
-      toast({
-        title: "Vui lòng điền đầy đủ thông tin",
-        variant: "destructive",
-      })
+      toast.error("Vui lòng điền đầy đủ thông tin")
       return
     }
 
@@ -131,19 +122,15 @@ export default function AdminDiscountsPage() {
 
       if (selectedDiscount) {
         await discountsApi.update(selectedDiscount._id, data)
-        toast({ title: "Cập nhật mã giảm giá thành công" })
+        toast.success("Đã cập nhật mã giảm giá thành công")
       } else {
         await discountsApi.create(data)
-        toast({ title: "Thêm mã giảm giá thành công" })
+        toast.success("Đã thêm mã giảm giá mới thành công")
       }
       setIsDialogOpen(false)
       void fetchDiscounts()
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     }
   }
 
@@ -151,15 +138,11 @@ export default function AdminDiscountsPage() {
     if (selectedDiscount) {
       try {
         await discountsApi.delete(selectedDiscount._id)
-        toast({ title: "Xóa mã giảm giá thành công" })
+        toast.success("Đã xóa mã giảm giá thành công")
         setIsDeleteDialogOpen(false)
         void fetchDiscounts()
       } catch (error) {
-        toast({
-          title: "Lỗi",
-          description: getErrorMessage(error),
-          variant: "destructive",
-        })
+        toast.error(getErrorMessage(error))
       }
     }
   }
@@ -431,8 +414,6 @@ export default function AdminDiscountsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <Toaster />
     </>
   )
 }

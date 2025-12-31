@@ -22,14 +22,12 @@ import { checkoutApi } from "@/lib/api"
 import { formatCurrency } from "@/lib/utils"
 import { getErrorMessage } from "@/lib/error-handler"
 import { getProductName, getProductImage } from "@/lib/product-helpers"
-import { useToast } from "@/hooks/use-toast"
-import { Toaster } from "@/components/ui/toaster"
+import { toast } from "sonner"
 
 export default function CheckoutPage() {
   const router = useRouter()
   const { items, total, isLoading } = useCart()
   const { user, isAuthenticated } = useAuth()
-  const { toast } = useToast()
 
   const [formData, setFormData] = useState({
     name: user?.name || "",
@@ -51,19 +49,12 @@ export default function CheckoutPage() {
     e.preventDefault()
 
     if (!isAuthenticated) {
-      toast({
-        title: "Vui lòng đăng nhập",
-        description: "Bạn cần đăng nhập để thanh toán",
-        variant: "destructive",
-      })
+      toast.error("Bạn cần đăng nhập để thanh toán")
       return
     }
 
     if (!formData.name || !formData.email || !formData.phone || !formData.address) {
-      toast({
-        title: "Vui lòng điền đầy đủ thông tin",
-        variant: "destructive",
-      })
+      toast.error("Vui lòng điền đầy đủ thông tin")
       return
     }
 
@@ -87,11 +78,7 @@ export default function CheckoutPage() {
         }
       }
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
       setIsSubmitting(false)
     }
   }
@@ -359,7 +346,6 @@ export default function CheckoutPage() {
         </div>
       </main>
       <Footer />
-      <Toaster />
     </div>
   )
 }

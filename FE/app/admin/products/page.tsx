@@ -23,10 +23,9 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { productsApi, categoriesApi } from "@/lib/api"
 import { formatCurrency, getProductImageUrl } from "@/lib/utils"
-import { useToast } from "@/hooks/use-toast"
-import { Toaster } from "@/components/ui/toaster"
 import type { Product, Category } from "@/lib/types"
 import { getErrorMessage } from "@/lib/error-handler"
+import { toast } from "sonner"
 import {
   validateImageFile,
   validateProductForm,
@@ -62,7 +61,6 @@ export default function AdminProductsPage() {
   ])
   const [specs, setSpecs] = useState<SpecFormData[]>([{ id: crypto.randomUUID(), label: "", value: "" }])
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { toast } = useToast()
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -70,11 +68,7 @@ export default function AdminProductsPage() {
       const response = await productsApi.getAllAdmin()
       setProducts(response.products)
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     } finally {
       setIsLoading(false)
     }
@@ -85,11 +79,7 @@ export default function AdminProductsPage() {
       const response = await categoriesApi.getAllAdmin()
       setCategories(response.categories)
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     }
   }, [toast])
 
@@ -106,11 +96,7 @@ export default function AdminProductsPage() {
       })
       setProducts(response.products)
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     } finally {
       setIsLoading(false)
     }
@@ -200,11 +186,7 @@ export default function AdminProductsPage() {
     })
 
     if (invalidFiles.length > 0) {
-      toast({
-        title: "Lỗi upload ảnh",
-        description: invalidFiles.join("\n"),
-        variant: "destructive",
-      })
+      toast.error(invalidFiles.join("\n"))
     }
 
     if (validFiles.length === 0) return
@@ -215,11 +197,7 @@ export default function AdminProductsPage() {
       const newPreviews = await Promise.all(previewPromises)
       setGalleryPreviews((prev) => [...prev, ...newPreviews])
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: "Không thể đọc file ảnh",
-        variant: "destructive",
-      })
+      toast.error("Không thể đọc file ảnh")
     }
   }
 
@@ -256,11 +234,7 @@ export default function AdminProductsPage() {
 
     const error = validateImageFile(file)
     if (error) {
-      toast({
-        title: "Lỗi upload ảnh màu",
-        description: error,
-        variant: "destructive",
-      })
+      toast.error(`Lỗi upload ảnh màu: ${error}`)
       return
     }
 
@@ -270,11 +244,7 @@ export default function AdminProductsPage() {
       const preview = await readFileAsDataURL(file)
       setColors((prev) => prev.map((color) => (color.id === id ? { ...color, preview } : color)))
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: "Không thể đọc file ảnh",
-        variant: "destructive",
-      })
+      toast.error("Không thể đọc file ảnh")
     }
   }
 
@@ -304,11 +274,7 @@ export default function AdminProductsPage() {
   const handleSave = useCallback(async () => {
     const validationError = validateProductForm(formData, galleryImages, galleryPreviews, colors)
     if (validationError) {
-      toast({
-        title: "Lỗi validation",
-        description: validationError,
-        variant: "destructive",
-      })
+      toast.error(validationError)
       return
     }
 
@@ -331,20 +297,12 @@ export default function AdminProductsPage() {
           })),
           specs: specs.filter((s) => s.label && s.value),
         })
-        toast({
-          title: "Thành công",
-          description: "Cập nhật sản phẩm thành công",
-          variant: "success",
-        })
+        toast.success("Đã cập nhật sản phẩm thành công")
       } else {
         // Validate that all colors have image files (not just preview URLs)
         const colorsWithFiles = validColors.filter((c) => c.image !== null)
         if (colorsWithFiles.length !== validColors.length) {
-          toast({
-            title: "Lỗi validation",
-            description: "Tất cả màu sắc phải có file ảnh. Vui lòng upload ảnh cho tất cả màu.",
-            variant: "destructive",
-          })
+          toast.error("Tất cả màu sắc phải có file ảnh. Vui lòng upload ảnh cho tất cả màu.")
           setIsSubmitting(false)
           return
         }
@@ -385,42 +343,26 @@ export default function AdminProductsPage() {
         }
 
         await productsApi.create(formDataToSend)
-        toast({
-          title: "Thành công",
-          description: "Thêm sản phẩm thành công",
-          variant: "success",
-        })
+        toast.success("Đã thêm sản phẩm mới thành công")
       }
       setIsDialogOpen(false)
       void fetchProducts()
     } catch (error) {
-      toast({
-        title: "Lỗi",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      toast.error(getErrorMessage(error))
     } finally {
       setIsSubmitting(false)
     }
-  }, [formData, galleryImages, galleryPreviews, colors, validColors, specs, selectedProduct, toast, fetchProducts])
+  }, [formData, galleryImages, galleryPreviews, colors, validColors, specs, selectedProduct, fetchProducts, toast])
 
   const handleDelete = async () => {
     if (selectedProduct) {
       try {
         await productsApi.delete(selectedProduct._id)
-        toast({
-          title: "Thành công",
-          description: "Xóa sản phẩm thành công",
-          variant: "success",
-        })
+        toast.success("Đã xóa sản phẩm thành công")
         setIsDeleteDialogOpen(false)
         void fetchProducts()
       } catch (error) {
-        toast({
-          title: "Lỗi",
-          description: getErrorMessage(error),
-          variant: "destructive",
-        })
+        toast.error(getErrorMessage(error))
       }
     }
   }
@@ -867,8 +809,6 @@ export default function AdminProductsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <Toaster />
     </>
   )
 }
