@@ -166,7 +166,7 @@ const handleVnpayReturn = async (req, res) => {
     await Cart.findOneAndUpdate({ user: order.user }, { items: [] })
   } else {
     order.paymentStatus = "failed"
-    order.status = "pending"
+    order.status = "cancelled"
   }
 
   await order.save()
