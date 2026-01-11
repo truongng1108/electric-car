@@ -26,7 +26,7 @@ import { ordersApi } from "@/lib/api"
 import { formatCurrency, getStatusLabel, getPaymentStatusLabel } from "@/lib/utils"
 import type { Order } from "@/lib/types"
 import { getErrorMessage } from "@/lib/error-handler"
-import { getProductName, getProductImage } from "@/lib/product-helpers"
+import { getProductName, getProductImage, getProductId } from "@/lib/product-helpers"
 import { toast } from "sonner"
 
 const statusColors: Record<string, string> = {
@@ -205,7 +205,7 @@ export default function AdminOrdersPage() {
                         <TableCell>
                           <div className="flex flex-wrap gap-1">
                             {order.orderItems.slice(0, 2).map((item, index) => {
-                              const productId = typeof item.product === "string" ? item.product : item.product._id
+                              const productId = getProductId(item) || item.name || ""
                               return (
                               <Badge key={`${productId}-${item.color}-${index}`} variant="outline" className="text-xs">
                                 {getProductName(item).length > 15
@@ -326,7 +326,7 @@ export default function AdminOrdersPage() {
                 <h4 className="font-medium mb-3">Sản phẩm</h4>
                 <div className="space-y-3">
                   {selectedOrder.orderItems.map((item, index) => {
-                    const productId = typeof item.product === "string" ? item.product : item.product._id
+                    const productId = getProductId(item) || item.name || ""
                     return (
                     <div key={`${productId}-${item.color}-${index}`} className="flex items-center gap-3">
                       <div className="relative h-12 w-12 rounded-lg overflow-hidden bg-muted shrink-0">

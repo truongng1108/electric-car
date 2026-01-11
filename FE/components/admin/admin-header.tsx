@@ -1,3 +1,6 @@
+"use client"
+
+import { useRouter } from "next/navigation"
 import { Bell, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +13,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useAuth } from "@/lib/auth-context"
 
 interface AdminHeaderProps {
   title: string
@@ -17,6 +21,14 @@ interface AdminHeaderProps {
 }
 
 export function AdminHeader({ title, description }: AdminHeaderProps) {
+  const router = useRouter()
+  const { logout } = useAuth()
+
+  const handleLogout = async () => {
+    await logout()
+    router.push("/")
+  }
+
   return (
     <header className="sticky top-0 lg:top-0 z-40 bg-background border-b">
       <div className="flex h-16 items-center justify-between px-6">
@@ -61,7 +73,9 @@ export function AdminHeader({ title, description }: AdminHeaderProps) {
               <DropdownMenuItem>Hồ sơ</DropdownMenuItem>
               <DropdownMenuItem>Cài đặt</DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive">Đăng xuất</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                Đăng xuất
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

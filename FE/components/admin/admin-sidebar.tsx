@@ -1,7 +1,7 @@
 "use client"
 
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import {
   LayoutDashboard,
   Package,
@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { useAuth } from "@/lib/auth-context"
 
 const navigation = [
   { name: "Dashboard", href: "/admin", icon: LayoutDashboard },
@@ -28,6 +29,13 @@ const navigation = [
 
 function SidebarContent() {
   const pathname = usePathname()
+  const router = useRouter()
+  const { logout } = useAuth()
+
+  const handleLogout = async () => {
+    await logout()
+    router.push("/")
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -71,7 +79,11 @@ function SidebarContent() {
             Về trang chủ
           </Button>
         </Link>
-        <Button variant="ghost" className="w-full justify-start gap-3 text-destructive hover:text-destructive">
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-3 text-destructive hover:text-destructive"
+          onClick={handleLogout}
+        >
           <LogOut className="h-5 w-5" />
           Đăng xuất
         </Button>
