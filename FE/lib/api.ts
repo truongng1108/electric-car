@@ -94,6 +94,13 @@ export const productsApi = {
       body: JSON.stringify(data),
     }),
   
+  updateWithFormData: (id: string, data: FormData): Promise<{ product: Product }> =>
+    fetchApi<{ product: Product }>(`/api/v1/products/${id}`, {
+      method: "PATCH",
+      headers: {},
+      body: data,
+    }),
+  
   delete: (id: string): Promise<{ msg: string }> =>
     fetchApi<{ msg: string }>(`/api/v1/products/${id}`, {
       method: "DELETE",
@@ -324,6 +331,27 @@ export const checkoutApi = {
     shippingAddress?: string
   }): Promise<CheckoutResponse> =>
     fetchApi<CheckoutResponse>("/api/v1/checkout/vnpay", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
+  
+  createGuestOrder: (data: {
+    items: Array<{
+      productId: string
+      name: string
+      price: number
+      quantity: number
+      color: string
+      image?: string
+    }>
+    discountCode?: string
+    paymentMethod?: string
+    userName: string
+    userEmail: string
+    userPhone: string
+    shippingAddress: string
+  }): Promise<CheckoutResponse> =>
+    fetchApi<CheckoutResponse>("/api/v1/checkout/guest", {
       method: "POST",
       body: JSON.stringify(data),
     }),

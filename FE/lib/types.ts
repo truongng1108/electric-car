@@ -6,7 +6,7 @@ export interface Product {
   description: string
   shortDescription: string
   images: string[]
-  colors: { name: string; hex: string; image: string }[]
+  colors: { name: string; hex: string; image: string; price?: number; originalPrice?: number }[]
   category: string | { _id: string; name: string; slug: string }
   specs: { label: string; value: string }[]
   stock: number
